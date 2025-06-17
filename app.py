@@ -27,7 +27,8 @@ st.set_page_config(
 )
 
 
-
+tavr_low_conf = False
+savr_low_conf = False
 
 
 
@@ -92,6 +93,10 @@ def generate_random_patient():
 # ===========================
 
 with st.sidebar:
+    st.title(f"📝 Enter Patient Data:")
+
+    st.divider()
+
     user_input['age'] = st.slider(
         "Age:", 18, 100,
         st.session_state.random_patient['age'] if st.session_state.random_patient else 18
@@ -189,6 +194,9 @@ with st.sidebar:
     if submit_btn:
         if not all(user_input.values()):
             st.warning("Please fill in all fields.")
+        else:
+            st.success("Submitted successfully!")
+        
 
 
 
@@ -198,8 +206,8 @@ with st.sidebar:
 # ===========================
 
 st.header("Aortic Valve Treatment Decision Support Tool")
-st.markdown("Welcome to the Aortic Valve Treatment Explorer — an interactive tool designed to help visualize and compare outcomes for patients undergoing **Transcatheter Aortic Valve Replacement (TAVR)** or **Surgical Aortic Valve Replacement (SAVR)**.")
-st.markdown("This tool is built using real-world clinical data from Northern New England region, enabling personalized insight into how your profile compares to thousands of patients treated in the area.")
+st.markdown("Welcome to the Aortic Valve Treatment Decision Support Tool — an interactive platform designed to help visualize and compare outcomes for patients undergoing **Transcatheter Aortic Valve Replacement (TAVR)** or **Surgical Aortic Valve Replacement (SAVR)**.")
+st.markdown("This tool is built using real-world de-identified clinical data from Northern New England region, enabling personalized insight into how your profile compares to thousands of patients treated in the area. It only includes fully observed, first time admission for aortic valve replacement patient records.")
 
 
 #st.markdown("<br><br>", unsafe_allow_html=True)  # one line
@@ -212,13 +220,16 @@ with st.container(border=False):
     m_col1.metric(label="Participating Hospitals", value="5")
     m_col2.metric(label="Data Collection Period", value="2015 - 2023")
     m_col1.metric(label="Total Patients", value="> 5,000")
-    m_col2.metric(label="TAVR / SAVR Ratio", value="40% / 60%")
+    m_col2.metric(label="TAVR : SAVR Ratio", value="40% : 60%")
 
     st.markdown("<br>", unsafe_allow_html=True)  # one line
 
     # display overall umap
     st.subheader("UMAP Visualization of Overall Patient Profiles")
     st.markdown("The interactive UMAP plot below visualizes the distribution of patient profiles in the dataset. Each point represents a patient, colored by their treatment type (TAVR or SAVR).")
+    st.markdown("""
+    This plot reveals two prominent clusters — one predominantly SAVR and the other TAVR, suggesting that patients selected for each treatment type generally differ in their clinical profiles. However, there are also **regions where SAVR and TAVR patients mixed together**, highlighting a zone of clinical ambiguity. In these mixed regions, treatment decisions appear less driven by clear-cut features and more reliant on clinician judgment, preferences, or patient-specific considerations.
+    """)
 
 
     df_plot = pd.read_csv('data/umap_embedding.csv')
@@ -258,13 +269,6 @@ with st.container(border=False):
 
     st.plotly_chart(fig)
 
-    with st.expander("About the Data"):
-        st.markdown("""
-        This UMAP plot reveals two prominent clusters — one predominantly SAVR and the other TAVR, suggesting that patients selected for each treatment type generally differ in their clinical profiles.
-
-        However, there are also **regions where SAVR and TAVR patients mixed together**, highlighting a zone of clinical ambiguity. In these mixed regions, treatment decisions appear less driven by clear-cut features and more reliant on clinician judgment, preferences, or patient-specific considerations.
-        """)
-
 
 st.divider()
 
@@ -301,7 +305,7 @@ if submit_btn and all(user_input.values()):
 
 
     # process user input
-    my_bar.progress(50, text="Processing user input...")
+    my_bar.progress(20, text="Processing user input...")
 
     user_input_df = pd.DataFrame([user_input])
     user_input_df = user_input_df.replace({'Yes':1, 'No':0, 'I':1, 'II':2, 'III':3, 'IV':4, 'Male':0, 'Female':1})
@@ -313,22 +317,27 @@ if submit_btn and all(user_input.values()):
     user_input_df[['age', 'height', 'weight', 'lvef', 'preproccreat', 'hgb', 'plateletct', 'albumin', 'inr']] = scaler.transform(user_input_df[['age', 'height', 'weight', 'lvef', 'preproccreat', 'hgb', 'plateletct', 'albumin', 'inr']])
 
 
-    print(user_input_df)
     # get new embedding
     new_embedding = umap_model.transform(user_input_df)
+
+    time.sleep(0.5)
+
+
+    my_bar.progress(40, text="Mapping patient profile...")
+
+    # see which treatment group is the new patient closest to
+    tavr_center = df_plot[df_plot["treatment"] == "TAVR"][["UMAP1", "UMAP2"]].mean().values
+    savr_center = df_plot[df_plot["treatment"] == "SAVR"][["UMAP1", "UMAP2"]].mean().values
+
+    dist_to_tavr = abs(np.linalg.norm(new_embedding[0] - tavr_center))
+    dist_to_savr = abs(np.linalg.norm(new_embedding[0] - savr_center))
 
 
     time.sleep(0.5)
 
     
 
-    my_bar.progress(75, text="Plotting...")
-    time.sleep(0.5)
-
-
-    my_bar.progress(100, text="Done!")
-    time.sleep(0.5)
-    my_bar.empty() 
+    my_bar.progress(60, text="Plotting...")
 
     ## Plot for TAVR patients
     df_tavr_plot = df_plot[df_plot['treatment'] == 'TAVR'].copy()
@@ -472,13 +481,44 @@ if submit_btn and all(user_input.values()):
         )
     )
 
+    time.sleep(0.5)
+
+
+
+    my_bar.progress(100, text="Done!")
+    time.sleep(0.5)
+    my_bar.empty() 
+
+
     # Display in Streamlit
     st.markdown("**UMAP Projection of TAVR Patients**")
-    st.markdown("The UMAP plot below shows the distribution of TAVR patients in the dataset. Each point represents a patient, colored and marked by whether they experienced a major adverse cardiovascular event (MACE) after the treatment. The star indicates your profile's position in this space.")
+    st.markdown("The UMAP plot below shows the distribution of TAVR patients in the dataset. Each point represents a patient, colored and marked by whether they experienced a major adverse cardiovascular event (MACE) after the treatment. The ⭐️ indicates your profile's position in this space.")
     st.plotly_chart(tfig, use_container_width=True)
     st.markdown("**UMAP Projection of SAVR Patients**")
-    st.markdown("The UMAP plot below shows the distribution of SAVR patients in the dataset. Each point represents a patient, colored and marked by whether they experienced a major adverse cardiovascular event (MACE) after the treatment. The star indicates your profile's position in this space.")
+    st.markdown("The UMAP plot below shows the distribution of SAVR patients in the dataset. Each point represents a patient, colored and marked by whether they experienced a major adverse cardiovascular event (MACE) after the treatment. The ⭐️ indicates your profile's position in this space.")
     st.plotly_chart(sfig, use_container_width=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)  # one line
+
+    with st.container(border=True):
+
+        if dist_to_tavr < dist_to_savr:
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;🔎 Based on your clinical profile, you are similar to patients who received **TAVR** treatment.")
+
+            # if very distinct, show a warning
+            if (dist_to_tavr * 1.5) < dist_to_savr:
+                savr_low_conf = True
+                st.warning("⚠️ Since similar patients rarely received SAVR in our dataset, the predicted SAVR outcome **may not be statistically reliable** and should be interpreted with **caution**.")
+        else:
+            st.markdown(f"&nbsp;&nbsp;&nbsp;&nbsp;🔎 Based on your clinical profile, you are similar to patients who received **SAVR** treatment.")
+
+            # if very distinct, show a warning
+            if (dist_to_savr * 1.5) < dist_to_tavr:
+                tavr_low_conf = True
+                st.warning("⚠️ Since similar patients rarely received TAVR in our dataset, the predicted TAVR outcome **may not be statistically reliable** and should be interpreted with **caution**.")
+            
+
+
 
 
 
@@ -516,7 +556,7 @@ if submit_btn and all(user_input.values()):
     min = -1.0 if min >= 0 else min
     max = max(math.ceil(max(tavr_risk)), math.ceil(max(savr_risk)))
 
-    range = list(np.arange(min, max+1, 0.5))
+    range = list(np.arange(min, max+0.6, 0.5))
     range_text = [str(round(x, 1)) for x in range]
 
 
@@ -538,30 +578,30 @@ if submit_btn and all(user_input.values()):
         showlegend=False
     )
 
-    # Trace: actual radar data
     risk_trace = go.Scatterpolar(
         r=tavr_risk,
         theta=angles,
         mode='lines+markers',
         fill='toself',
+        fillcolor='rgba(171, 209, 241, 0.5)',
         name="Risk Contribution to TAVR",
-        marker=dict(size=6, color="#255D99"),
-        line=dict(color='#255D99', width=2),
+        marker=dict(size=6, color="#80C4FB"),
+        line=dict(color="#56A2E1", width=2),
     )
 
-    # Trace: actual radar data
     risk_trace2 = go.Scatterpolar(
         r=savr_risk,
         theta=angles,
         mode='lines+markers',
         fill='toself',
+        fillcolor='rgba(81, 130, 182, 0.6)',
         name="Risk Contribution to SAVR",
-        marker=dict(size=6, color="#80C4FB"),
-        line=dict(color="#80C4FB", width=2),
+        marker=dict(size=6, color="#255D99"),
+        line=dict(color="#0F3A68", width=2),
     )
 
     # Create figure
-    fig = go.Figure(data=[zero_line, risk_trace, risk_trace2])
+    fig = go.Figure(data=[zero_line, risk_trace2, risk_trace])
 
     # Add feature names to angular axis
     fig.update_layout(
@@ -630,18 +670,29 @@ if submit_btn and all(user_input.values()):
         tau_new = propensity_scores * tau0_new + (1 - propensity_scores) * tau1_new
         if tau_new[0] < 0 :
             result_text = f"SAVR is expected to reduce your adjusted risk compared to TAVR by"
-            result_value = str(round(abs(tau_new[0]*100),2)) + "%"
+            result_value = "⬇️" + str(round(abs(tau_new[0]*100),2)) + "%"
         else:
             result_text = f"SAVR is expected to increase your adjusted risk compared to TAVR by"
-            result_value = str(round(abs(tau_new[0]*100),2)) + "%"
+            result_value = "⬆" + str(round(abs(tau_new[0]*100),2)) + "%"
 
+        t_label = "TAVR Risk" if not tavr_low_conf else "⚠️ TAVR Risk"
+        s_label = "SAVR Risk" if not savr_low_conf else "⚠️ SAVR Risk"
 
 
         # display results
         col1, col2, col3 = st.columns([1,1,2])
-        col1.metric(label="TAVR Risk", value=tavr_prob)
-        col2.metric(label="SAVR Risk", value=savr_prob)
+        col1.metric(label=t_label, value=tavr_prob)
+        col2.metric(label=s_label, value=savr_prob)
         col3.metric(label=result_text, value=result_value)
+
+        st.markdown(f"""
+        &nbsp;&nbsp;🔎 **Understanding the Three Risk Numbers**
+
+        - **TAVR Risk**: Estimated using only patients who actually received **TAVR** in our dataset.
+        - **SAVR Risk**: Estimated using only patients who actually received **SAVR** in our dataset.
+        - These outcome probabilities are not directly comparable because they come from different patient populations.
+        - **Estimated Treatment Effect**: Calculated using a causal model (X-Learner) that adjusts for baseline differences between patients using propensity score weighting.             
+        """)
 
 
 
