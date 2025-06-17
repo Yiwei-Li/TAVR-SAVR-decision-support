@@ -554,7 +554,7 @@ if submit_btn and all(user_input.values()):
     # get range
     min = min(math.floor(min(tavr_risk)), math.floor(min(savr_risk)))
     min = -1.0 if min >= 0 else min
-    max = max(math.ceil(max(tavr_risk)), math.ceil(max(savr_risk)))
+    max = max(math.ceil(max(tavr_risk) * 2) / 2, math.ceil(max(savr_risk) * 2) / 2)
 
     range = list(np.arange(min, max+0.6, 0.5))
     range_text = [str(round(x, 1)) for x in range]
