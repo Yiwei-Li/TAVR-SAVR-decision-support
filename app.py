@@ -670,10 +670,10 @@ if submit_btn and all(user_input.values()):
         tau_new = propensity_scores * tau0_new + (1 - propensity_scores) * tau1_new
         if tau_new[0] < 0 :
             result_text = f"SAVR is expected to reduce your adjusted risk compared to TAVR by"
-            result_value = "⬇️" + str(round(abs(tau_new[0]*100),2)) + "%"
+            result_value = "↓ " + str(round(abs(tau_new[0]*100),2)) + "%"
         else:
             result_text = f"SAVR is expected to increase your adjusted risk compared to TAVR by"
-            result_value = "⬆" + str(round(abs(tau_new[0]*100),2)) + "%"
+            result_value = "↑ " + str(round(abs(tau_new[0]*100),2)) + "%"
 
         t_label = "TAVR Risk" if not tavr_low_conf else "⚠️ TAVR Risk"
         s_label = "SAVR Risk" if not savr_low_conf else "⚠️ SAVR Risk"
