@@ -47,6 +47,22 @@ The dataset includes over 20 baseline clinical features and outcomes used to tra
 
 <br>
 
+## 🔒 Limitations
+
+- **Data Quality**: This model was trained on a subset (~30%) of the original dataset due to missing values and it's unclear whether the missingness reflects true absence or inconsistencies in data entry, potentially introducing bias.
+- **Geographic Generalizability**: The dataset reflects patients treated in the **Northern New England region**. Practices, patient populations, and outcomes may differ in other areas, limiting broader applicability.
+- **Model Complexity**: The current version uses default XGBoost settings for both outcome and treatment effect models. While robust, this model is not fine-tuned and may benefit from hyperparameter optimization, cross-validation, or utilization of alternative models.
+
+<br>
+
+## 💭 Future Work
+
+- **Leverage Full EHR Integration**: While this tool uses structured EHR data, much of the richness of patient information, including physician notes, imaging results, and previous labs, exists in unstructured formats. A key future step is to extract complete and context-rich data to improve the real-time accuracy of predictions.
+- **Quantify Uncertainty**: Display confidence intervals to treatment effect estimates when the new patient is far from the training data manifold.
+- **Expand Generalizability**: Explore **federated learning** to securely aggregate models across institutions from other regions.
+
+<br>
+
 ## 📬 Contact
 
 For questions, feedback, or collaboration, feel free to reach out via GitHub Issues or Yiwei.Li@hitchcock.org
