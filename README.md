@@ -1,7 +1,7 @@
 # Aortic Valve Treatment Decision Support Tool
 
 
-**Live App**: [https://tavr-savr-decision-support.streamlit.app/)
+**Live App**: https://tavr-savr-decision-support.streamlit.app/
 
 This is an interactive clinical decision support tool designed to help visualize and compare the risk of major adverse cardiovascular events (MACE) for patients undergoing either **Transcatheter Aortic Valve Replacement (TAVR)** or **Surgical Aortic Valve Replacement (SAVR)**.
 
